@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enter Passcode</title>
+</head>
+<body>
+    <h2>Enter 6-Digit Passcode:</h2>
+    <input type="password" id="code" maxlength="6">
+    <button onclick="check()">Enter</button>
+
+    <script>
+        async function check() {
+            const val = document.getElementById('code').value;
+            
+            try {
+                // Try to "fetch" a hidden file named after the passcode
+                const response = await fetch(val + ".txt");
+                
+                if (response.ok) {
+                    // If file exists, user is authorized
+                    sessionStorage.setItem("authorized", "true");
+                    window.location.href = "index.html";
+                } else {
+                    alert("Incorrect Passcode");
+                }
+            } catch (e) {
+                alert("Error checking passcode.");
+            }
+        }
+    </script>
+</body>
+</html>
