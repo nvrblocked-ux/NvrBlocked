@@ -1,32 +1,51 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Enter Passcode</title>
+    <title>Passcode Entry</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f4f4f4; }
+        .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+        input { font-size: 1.5rem; width: 150px; text-align: center; padding: 5px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+    </style>
 </head>
 <body>
-    <h2>Enter 6-Digit Passcode:</h2>
-    <input type="password" id="code" maxlength="6">
-    <button onclick="check()">Enter</button>
 
-    <script>
-        async function check() {
-            const val = document.getElementById('code').value;
-            
+<div class="login-card">
+    <h2>Enter Passcode:</h2>
+    <input type="password" id="passInput" maxlength="6" autofocus placeholder="******">
+    <br>
+    <button onclick="checkAccess()">Enter</button>
+</div>
+
+<script>
+    async function checkAccess() {
+        const code = document.getElementById('passInput').value;
+        
+        if (code.length === 6) {
             try {
-                // Try to "fetch" a hidden file named after the passcode
-                const response = await fetch(val + ".txt");
+                // It looks for "passwords/412230.txt"
+                const response = await fetch(`passwords/${code}.txt`);
                 
                 if (response.ok) {
-                    // If file exists, user is authorized
+                    // Success! Store the "auth" in session memory
                     sessionStorage.setItem("authorized", "true");
                     window.location.href = "index.html";
                 } else {
-                    alert("Incorrect Passcode");
+                    alert("Invalid Passcode.");
+                    document.getElementById('passInput').value = '';
                 }
-            } catch (e) {
-                alert("Error checking passcode.");
+            } catch (err) {
+                alert("Connection error. Try again.");
             }
         }
-    </script>
+    }
+
+    // Enter key support
+    document.getElementById('passInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') checkAccess();
+    });
+</script>
+
 </body>
 </html>
