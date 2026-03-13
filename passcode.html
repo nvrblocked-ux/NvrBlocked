@@ -19,32 +19,36 @@
 </div>
 
 <script>
-    async function checkAccess() {
-        const code = document.getElementById('passInput').value;
-        
-        if (code.length === 6) {
-            try {
-                // It looks for "passwords/412230.txt"
-                const response = await fetch(`passwords/${code}.txt`);
-                
-                if (response.ok) {
-                    // Success! Store the "auth" in session memory
-                    sessionStorage.setItem("authorized", "true");
-                    window.location.href = "index.html";
-                } else {
-                    alert("Invalid Passcode.");
-                    document.getElementById('passInput').value = '';
-                }
-            } catch (err) {
-                alert("Connection error. Try again.");
-            }
-        }
+  async function checkAccess() {
+    const enteredCode = document.getElementById('passInput').value;
+    const claimedCode = localStorage.getItem("my_claimed_code");
+
+    // 1. If they already claimed a code, they MUST use that specific one
+    if (claimedCode && enteredCode !== claimedCode) {
+        alert("This device is already linked to a different passcode.");
+        return;
     }
 
-    // Enter key support
-    document.getElementById('passInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') checkAccess();
-    });
+    if (enteredCode.length === 6) {
+        try {
+            const response = await fetch(`passwords/${enteredCode}.txt`);
+            
+            if (response.ok) {
+                // 2. Lock this code to this device if it's their first time
+                if (!claimedCode) {
+                    localStorage.setItem("my_claimed_code", enteredCode);
+                }
+                
+                sessionStorage.setItem("authorized", "true");
+                window.location.href = "index.html";
+            } else {
+                alert("Invalid Passcode.");
+            }
+        } catch (err) {
+            alert("Error connecting.");
+        }
+    }
+}
 </script>
 
 </body>
