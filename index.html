@@ -1,3 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script>
+        // Check if the user has already entered the correct code this session
+        if (sessionStorage.getItem("authorized") !== "true") {
+            window.location.href = "passcode.html";
+        }
+    </script>
+    <title>My Private Site</title>
+</head>
+<body>
+    <h1>Welcome to the Secret Site!</h1>
+    <p>This content is only visible after entering the passcode.</p>
+    
+    <button onclick="sessionStorage.clear(); location.reload();">Log Out</button>
+</body>
+</html>
+
 <h1>
   Welcome
 </h1>
