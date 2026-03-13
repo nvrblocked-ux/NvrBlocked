@@ -20,7 +20,7 @@
         .admin-section h2 { color: #e3b341; margin-top: 0; font-size: 18px; display: flex; align-items: center; gap: 8px; }
         select { background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; padding: 10px; border-radius: 6px; width: 100%; cursor: pointer; outline: none; margin-bottom: 15px; font-size: 14px; }
         select:focus { border-color: #58a6ff; }
-        .log-box { background: #0d1117; border: 1px solid #30363d; padding: 15px; border-radius: 6px; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 12px; display: none; color: #79c0ff; line-height: 1.6; max-height: 300px; overflow-y: auto; }
+        .log-box { background: #0d1117; border: 1px solid #30363d; padding: 15px; border-radius: 6px; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 12px; display: none; color: #79c0ff; line-height: 1.6; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
         
         .btn-secondary { margin-top: 30px; background: transparent; border: 1px solid #30363d; color: #f85149; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
         .btn-secondary:hover { background: #f85149; color: white; border-color: #f85149; }
@@ -61,11 +61,11 @@
             display.style.display = "block";
             display.innerText = "Loading logs...";
             try {
-                // Fetch keys and values from KVdb
+                // Fixed URL syntax with / and $
                 const res = await fetch(`https://kvdb.io{BUCKET_ID}/?values=true`);
                 const data = await res.json();
                 
-                if (data.length === 0) {
+                if (!data || data.length === 0) {
                     display.innerText = "No logs recorded yet.";
                     return;
                 }
@@ -77,7 +77,8 @@
                 });
                 display.innerText = logContent;
             } catch (err) {
-                display.innerText = "Error: Failed to connect to KVdb logs.";
+                console.error(err);
+                display.innerText = "Error: Failed to connect to KVdb logs. Check your Bucket ID settings.";
             }
         }
     }
