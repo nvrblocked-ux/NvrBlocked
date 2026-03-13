@@ -26,41 +26,51 @@
     </div>
 
 <script>
-    const BUCKET_ID = "Bbn8zHY5gvmsT73xEos9VA"; // Go to kvdb.io to get a free random ID
+   async function checkAccess() {
+    const code = document.getElementById('passInput').value;
+    const error = document.getElementById('errorMsg');
+    const BUCKET_ID = "YOUR_UNIQUE_ID_HERE"; // <--- DID YOU CHANGE THIS?
 
-    async function checkAccess() {
-        const code = document.getElementById('passInput').value;
-        const error = document.getElementById('errorMsg');
-        
-        if (code.length === 6) {
+    if (code.length === 6) {
+        try {
+            // 1. Check if the passcode file exists first
+            const authRes = await fetch(`passwords/${code}.txt`);
+            
+            if (!authRes.ok) {
+                error.innerText = "Invalid passcode.";
+                error.style.display = "block";
+                return;
+            }
+
+            // 2. Try to get IP (Optional - if this fails, we still let them in)
+            let logData = "Unknown IP";
             try {
-                // Get IP and Browser
                 const ipRes = await fetch("https://api.ipify.org");
                 const { ip } = await ipRes.json();
-                const browser = navigator.userAgent.split(' ').pop();
+                logData = `IP: ${ip} | Browser: ${navigator.userAgent.split(' ').pop()}`;
+            } catch (e) { console.log("IP fetch failed, skipping log."); }
 
-                // Check if file exists in /passwords/ folder
-                const authRes = await fetch(`passwords/${code}.txt`);
-                
-                if (authRes.ok) {
-                    // Log to KVdb
-                    await fetch(`https://kvdb.io{BUCKET_ID}/${code}`, {
-                        method: 'POST',
-                        body: `IP: ${ip} | Browser: ${browser} | Date: ${new Date().toLocaleString()}`
-                    });
-
-                    sessionStorage.setItem("authorized", "true");
-                    if (code === "412230") sessionStorage.setItem("role", "admin");
-                    window.location.href = "index.html";
-                } else {
-                    error.style.display = "block";
-                }
-            } catch (err) {
-                error.innerText = "Connection error.";
-                error.style.display = "block";
+            // 3. Try to log to database (Only if BUCKET_ID is set)
+            if (BUCKET_ID !== "YOUR_UNIQUE_ID_HERE") {
+                await fetch(`https://kvdb.io{BUCKET_ID}/${code}`, {
+                    method: 'POST',
+                    body: `${logData} | Time: ${new Date().toLocaleString()}`
+                });
             }
+
+            // 4. Set session and redirect
+            sessionStorage.setItem("authorized", "true");
+            if (code === "412230") sessionStorage.setItem("role", "admin");
+            window.location.href = "index.html";
+
+        } catch (err) {
+            console.error(err);
+            error.innerText = "Connection error. Check console (F12) for details.";
+            error.style.display = "block";
         }
     }
+}
+
 </script>
 </body>
 </html>
