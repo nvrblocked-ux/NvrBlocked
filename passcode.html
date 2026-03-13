@@ -1,55 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Passcode Entry</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in · Private Portal</title>
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f4f4f4; }
-        .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
-        input { font-size: 1.5rem; width: 150px; text-align: center; padding: 5px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; }
-        button { background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        body { background-color: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background-color: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 32px; width: 300px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        h2 { font-size: 24px; font-weight: 300; margin-bottom: 20px; color: #f0f6fc; }
+        label { display: block; text-align: left; font-size: 14px; margin-bottom: 8px; font-weight: 600; }
+        input { width: 100%; padding: 8px 12px; background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #f0f6fc; font-size: 16px; box-sizing: border-box; margin-bottom: 16px; outline: none; }
+        input:focus { border-color: #58a6ff; box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.3); }
+        button { width: 100%; padding: 10px; background-color: #238636; color: #ffffff; border: 1px solid rgba(240, 246, 252, 0.1); border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; }
+        button:hover { background-color: #2ea043; }
+        .error { color: #f85149; font-size: 13px; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
-
-<div class="login-card">
-    <h2>Enter Passcode:</h2>
-    <input type="password" id="passInput" maxlength="6" autofocus placeholder="******">
-    <br>
-    <button onclick="checkAccess()">Enter</button>
-</div>
+    <div class="login-card">
+        <h2>Enter Passcode</h2>
+        <label for="passInput">6-Digit Code</label>
+        <input type="password" id="passInput" maxlength="6" autofocus>
+        <button onclick="checkAccess()">Unlock</button>
+        <p id="errorMsg" class="error">Invalid passcode or connection error.</p>
+    </div>
 
 <script>
-  async function checkAccess() {
-    const enteredCode = document.getElementById('passInput').value;
-    const claimedCode = localStorage.getItem("my_claimed_code");
+    const BUCKET_ID = "YOUR_UNIQUE_ID_HERE"; // Go to kvdb.io to get a free random ID
 
-    // 1. If they already claimed a code, they MUST use that specific one
-    if (claimedCode && enteredCode !== claimedCode) {
-        alert("This device is already linked to a different passcode.");
-        return;
-    }
+    async function checkAccess() {
+        const code = document.getElementById('passInput').value;
+        const error = document.getElementById('errorMsg');
+        
+        if (code.length === 6) {
+            try {
+                // Get IP and Browser
+                const ipRes = await fetch("https://api.ipify.org");
+                const { ip } = await ipRes.json();
+                const browser = navigator.userAgent.split(' ').pop();
 
-    if (enteredCode.length === 6) {
-        try {
-            const response = await fetch(`passwords/${enteredCode}.txt`);
-            
-            if (response.ok) {
-                // 2. Lock this code to this device if it's their first time
-                if (!claimedCode) {
-                    localStorage.setItem("my_claimed_code", enteredCode);
-                }
+                // Check if file exists in /passwords/ folder
+                const authRes = await fetch(`passwords/${code}.txt`);
                 
-                sessionStorage.setItem("authorized", "true");
-                window.location.href = "index.html";
-            } else {
-                alert("Invalid Passcode.");
+                if (authRes.ok) {
+                    // Log to KVdb
+                    await fetch(`https://kvdb.io{BUCKET_ID}/${code}`, {
+                        method: 'POST',
+                        body: `IP: ${ip} | Browser: ${browser} | Date: ${new Date().toLocaleString()}`
+                    });
+
+                    sessionStorage.setItem("authorized", "true");
+                    if (code === "412230") sessionStorage.setItem("role", "admin");
+                    window.location.href = "index.html";
+                } else {
+                    error.style.display = "block";
+                }
+            } catch (err) {
+                error.innerText = "Connection error.";
+                error.style.display = "block";
             }
-        } catch (err) {
-            alert("Error connecting.");
         }
     }
-}
 </script>
-
 </body>
 </html>
