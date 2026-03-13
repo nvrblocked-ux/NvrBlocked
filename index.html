@@ -2,21 +2,16 @@
 <html>
 <head>
     <script>
-        // Check if the user has already entered the correct code this session
+        // Redirect if the session key is missing
         if (sessionStorage.getItem("authorized") !== "true") {
-            window.location.href = "passcode.html";
+            window.location.replace("passcode.html");
         }
     </script>
-    <title>My Private Site</title>
+    <title>Dashboard</title>
 </head>
 <body>
-    <h1>Welcome to the Secret Site!</h1>
-    <p>This content is only visible after entering the passcode.</p>
-    
+    <h1>Access Granted</h1>
+    <p>Welcome to the private area.</p>
     <button onclick="sessionStorage.clear(); location.reload();">Log Out</button>
 </body>
 </html>
-
-<h1>
-  Welcome
-</h1>
