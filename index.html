@@ -1,17 +1,75 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <script>
-        // Redirect if the session key is missing
         if (sessionStorage.getItem("authorized") !== "true") {
             window.location.replace("passcode.html");
         }
     </script>
-    <title>Dashboard</title>
+    <title>Dashboard · Private Portal</title>
+    <style>
+        body { background-color: #0d1117; color: #c9d1d9; font-family: -apple-system, sans-serif; margin: 0; padding: 40px; }
+        .container { max-width: 800px; margin: 0 auto; background-color: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 24px; }
+        h1 { color: #f0f6fc; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        
+        /* Admin Panel Styles */
+        .admin-box { margin-top: 30px; border: 1px solid #d29922; border-radius: 6px; padding: 20px; background-color: rgba(187, 128, 9, 0.05); }
+        .admin-box h2 { color: #e3b341; margin-top: 0; }
+        select { background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; padding: 8px; border-radius: 6px; width: 100%; cursor: pointer; }
+        .log-area { background: #0d1117; border: 1px solid #30363d; padding: 15px; margin-top: 15px; border-radius: 6px; font-family: monospace; white-space: pre-wrap; display: none; color: #8b949e; }
+        
+        .logout-btn { margin-top: 20px; background: none; border: 1px solid #30363d; color: #f85149; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+        .logout-btn:hover { background: #f85149; color: white; }
+    </style>
 </head>
 <body>
-    <h1>Access Granted</h1>
-    <p>Welcome to the private area.</p>
-    <button onclick="sessionStorage.clear(); location.reload();">Log Out</button>
+
+    <div class="container">
+        <h1>Private Dashboard</h1>
+        <p>You have successfully logged in.</p>
+
+        <!-- Admin Only -->
+        <div id="adminPanel" style="display:none;" class="admin-box">
+            <h2>🛠 Admin Access</h2>
+            <select id="adminAction" onchange="runAdminAction()">
+                <option value="">-- Select Action --</option>
+                <option value="view">See Passcodes & Connected IPs</option>
+            </select>
+            <div id="logDisplay" class="log-area">Loading...</div>
+        </div>
+
+        <button class="logout-btn" onclick="sessionStorage.clear(); location.reload();">Log Out</button>
+    </div>
+
+<script>
+    const BUCKET_ID = "YOUR_UNIQUE_ID_HERE"; // MUST MATCH passcode.html
+
+    if (sessionStorage.getItem("role") === "admin") {
+        document.getElementById("adminPanel").style.display = "block";
+    }
+
+    async function runAdminAction() {
+        const action = document.getElementById("adminAction").value;
+        const display = document.getElementById("logDisplay");
+
+        if (action === "view") {
+            display.style.display = "block";
+            try {
+                const res = await fetch(`https://kvdb.io{BUCKET_ID}/?values=true`);
+                const data = await res.json();
+                
+                // Format the data nicely
+                let html = "<strong>LOGGED SESSIONS:</strong><br><br>";
+                data.forEach(item => {
+                    html += `<span style="color:#58a6ff;">Code ${item[0]}:</span> ${item[1]}<br>`;
+                });
+                display.innerHTML = html;
+            } catch (err) {
+                display.innerHTML = "Error fetching logs. Make sure you set your BUCKET_ID.";
+            }
+        }
+    }
+</script>
 </body>
 </html>
