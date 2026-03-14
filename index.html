@@ -2,44 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <script>
-        // Security check before loading page content
-        if (sessionStorage.getItem("authorized") !== "true") {
-            window.location.replace("passcode.html");
-        }
-    </script>
     <title>Dashboard · Private Portal</title>
     <style>
         body { background-color: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; margin: 0; padding: 40px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 800px; background-color: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         h1 { color: #f0f6fc; border-bottom: 1px solid #30363d; padding-bottom: 15px; font-weight: 400; margin-top: 0; }
         p { line-height: 1.6; color: #8b949e; }
-        
-        /* Admin Styling */
         .admin-section { margin-top: 40px; border: 1px solid #d29922; border-radius: 6px; padding: 24px; background-color: rgba(187, 128, 9, 0.05); }
         .admin-section h2 { color: #e3b341; margin-top: 0; font-size: 18px; display: flex; align-items: center; gap: 8px; }
-        select { background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; padding: 10px; border-radius: 6px; width: 100%; cursor: pointer; outline: none; margin-bottom: 15px; font-size: 14px; }
-        select:focus { border-color: #58a6ff; }
-        .log-box { background: #0d1117; border: 1px solid #30363d; padding: 15px; border-radius: 6px; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 12px; display: none; color: #79c0ff; line-height: 1.6; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
-        
-        .btn-secondary { margin-top: 30px; background: transparent; border: 1px solid #30363d; color: #f85149; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
-        .btn-secondary:hover { background: #f85149; color: white; border-color: #f85149; }
+        select { background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; padding: 10px; border-radius: 6px; width: 100%; cursor: pointer; margin-bottom: 15px; font-size: 14px; }
+        .log-box { background: #0d1117; border: 1px solid #30363d; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 12px; display: none; color: #79c0ff; line-height: 1.6; max-height: 300px; overflow-y: auto; white-space: pre-wrap; }
+        .btn-secondary { margin-top: 30px; background: transparent; border: 1px solid #30363d; color: #f85149; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .btn-secondary:hover { background: #f85149; color: white; }
     </style>
 </head>
 <body>
-
     <div class="container">
         <h1>Private Dashboard</h1>
         <p>Access granted. All features are now unlocked for this session.</p>
 
-        <!-- Admin Only Panel -->
         <div id="adminPanel" style="display:none;" class="admin-section">
             <h2>🛠 Admin Control Panel</h2>
             <select id="adminAction" onchange="handleAdminAction()">
                 <option value="">-- Choose an Action --</option>
-                <option value="view">View Active Passcodes & Connections</option>
+                <option value="view">View History Logs</option>
+                <option value="stats">View Visitor Stats (Total & Online)</option>
             </select>
-            <div id="logDisplay" class="log-box">Requesting logs...</div>
+            <div id="logDisplay" class="log-box"></div>
         </div>
 
         <button class="btn-secondary" onclick="sessionStorage.clear(); window.location.href='passcode.html';">Sign Out</button>
@@ -47,45 +36,42 @@
 
 <script>
     const BUCKET_ID = "Bbn8zHY5gvmsT73xEos9VA";
+    const USER_CODE = sessionStorage.getItem("userCode") || "unknown";
 
-    // Show panel only for the Admin
-    if (sessionStorage.getItem("role") === "admin") {
-        document.getElementById("adminPanel").style.display = "block";
+    if (sessionStorage.getItem("authorized") !== "true") window.location.replace("passcode.html");
+    if (sessionStorage.getItem("role") === "admin") document.getElementById("adminPanel").style.display = "block";
+
+    // Online Status Heartbeat (TTL 60s)
+    async function sendHeartbeat() {
+        try {
+            await fetch(`https://kvdb.io/${BUCKET_ID}/online_${USER_CODE}?ttl=60`, { method: 'POST', body: 'active' });
+        } catch (e) {}
     }
+    sendHeartbeat();
+    setInterval(sendHeartbeat, 30000);
 
     async function handleAdminAction() {
-    const action = document.getElementById("adminAction").value;
-    const display = document.getElementById("logDisplay");
+        const action = document.getElementById("adminAction").value;
+        const display = document.getElementById("logDisplay");
+        if (!action) return;
 
-    if (action === "view") {
         display.style.display = "block";
-        display.innerText = "Loading logs...";
-        try {
-            // FIXED: Added /$ and used correct list parameters
-            const res = await fetch(`https://kvdb.io{BUCKET_ID}/?values=true`);
-            const data = await res.json();
-            
-            if (!data || data.length === 0) {
-                display.innerText = "No logs recorded yet.";
-                return;
-            }
+        display.innerText = "Loading...";
 
-            let logContent = "HISTORY OF CONNECTED USERS:\n" + "=".repeat(30) + "\n\n";
-            
-            // Loop through the [key, value] pairs returned by the API
-            data.forEach(item => {
-                const code = item[0];
-                const info = item[1];
-                logContent += `CODE [${code}] -> ${info}\n`;
-            });
-            
-            display.innerText = logContent;
-        } catch (err) {
-            console.error("KVdb Error:", err);
-            display.innerText = "Error: Failed to connect to KVdb. Check your Bucket ID or internet connection.";
-        }
+        try {
+            if (action === "view") {
+                const res = await fetch(`https://kvdb.io{BUCKET_ID}/?values=true`);
+                const data = await res.json();
+                let content = "HISTORY:\n" + "=".repeat(20) + "\n";
+                data.forEach(item => { if(!item[0].startsWith('online_') && item[0] !== 'total_visitors') content += `[${item[0]}] ${item[1]}\n`; });
+                display.innerText = content;
+            } else if (action === "stats") {
+                const total = await (await fetch(`https://kvdb.io/${BUCKET_ID}/total_visitors`)).text() || "0";
+                const online = (await (await fetch(`https://kvdb.io/${BUCKET_ID}/?prefix=online_`)).json()).length;
+                display.innerHTML = `<p>📊 Total Visitors: ${total}</p><p>🟢 Users Online: ${online}</p>`;
+            }
+        } catch (err) { display.innerText = "Error loading data."; }
     }
-}
 </script>
 </body>
 </html>
