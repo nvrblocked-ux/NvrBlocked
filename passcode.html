@@ -28,7 +28,6 @@
 <script>
     const BUCKET_ID = "Bbn8zHY5gvmsT73xEos9VA"; 
 
-    // Allow pressing "Enter" to submit
     document.getElementById('passInput').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') { checkAccess(); }
     });
@@ -43,23 +42,23 @@
                 const authRes = await fetch(`passwords/${code}.txt`);
                 
                 if (!authRes.ok) {
-                    error.innerText = "Invalid passcode. (Error: " + authRes.status + ")";
+                    error.innerText = "Invalid passcode.";
                     error.style.display = "block";
                     return;
                 }
 
-                // 2. IP tracking (fixed to use text() for ipify)
-                let logInfo = "IP Blocked/Hidden";
+                // 2. IP tracking
+                let logInfo = "IP Hidden";
                 try {
                     const ipRes = await fetch("https://api.ipify.org");
                     if (ipRes.ok) {
                         const ipText = await ipRes.text();
-                        logInfo = `IP: ${ipText} | Browser: ${navigator.userAgent.split(' ').pop()}`;
+                        logInfo = `IP: ${ipText}`;
                     }
                 } catch(e) { console.warn("IP Tracker blocked."); }
 
-                // 3. Log to KVdb (fixed URL syntax)
-                await fetch(`https://kvdb.io{BUCKET_ID}/${code}`, {
+                // 3. Log to KVdb (FIXED)
+                await fetch(`https://kvdb.io/${BUCKET_ID}/${code}`, {
                     method: 'POST',
                     body: `${logInfo} | Date: ${new Date().toLocaleString()}`
                 });
@@ -70,13 +69,10 @@
                 window.location.href = "index.html";
 
             } catch (err) {
-                console.error("Login Error:", err);
-                error.innerText = "Connection error. Check your network or GitHub folder.";
+                console.error(err);
+                error.innerText = "Connection error.";
                 error.style.display = "block";
             }
-        } else {
-            error.innerText = "Please enter a 6-digit code.";
-            error.style.display = "block";
         }
     }
 </script>
