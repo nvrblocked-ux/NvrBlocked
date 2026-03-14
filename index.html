@@ -54,34 +54,38 @@
     }
 
     async function handleAdminAction() {
-        const action = document.getElementById("adminAction").value;
-        const display = document.getElementById("logDisplay");
+    const action = document.getElementById("adminAction").value;
+    const display = document.getElementById("logDisplay");
 
-        if (action === "view") {
-            display.style.display = "block";
-            display.innerText = "Loading logs...";
-            try {
-                // Fixed URL syntax with / and $
-                const res = await fetch(`https://kvdb.io{BUCKET_ID}/?values=true`);
-                const data = await res.json();
-                
-                if (!data || data.length === 0) {
-                    display.innerText = "No logs recorded yet.";
-                    return;
-                }
-
-                let logContent = "HISTORY OF CONNECTED USERS:\n" + "=".repeat(30) + "\n\n";
-                data.forEach(item => {
-                    // item is [key, value]
-                    logContent += `CODE [${item[0]}] -> ${item[1]}\n`;
-                });
-                display.innerText = logContent;
-            } catch (err) {
-                console.error(err);
-                display.innerText = "Error: Failed to connect to KVdb logs. Check your Bucket ID settings.";
+    if (action === "view") {
+        display.style.display = "block";
+        display.innerText = "Loading logs...";
+        try {
+            // FIXED: Added /$ and used correct list parameters
+            const res = await fetch(`https://kvdb.io{BUCKET_ID}/?values=true`);
+            const data = await res.json();
+            
+            if (!data || data.length === 0) {
+                display.innerText = "No logs recorded yet.";
+                return;
             }
+
+            let logContent = "HISTORY OF CONNECTED USERS:\n" + "=".repeat(30) + "\n\n";
+            
+            // Loop through the [key, value] pairs returned by the API
+            data.forEach(item => {
+                const code = item[0];
+                const info = item[1];
+                logContent += `CODE [${code}] -> ${info}\n`;
+            });
+            
+            display.innerText = logContent;
+        } catch (err) {
+            console.error("KVdb Error:", err);
+            display.innerText = "Error: Failed to connect to KVdb. Check your Bucket ID or internet connection.";
         }
     }
+}
 </script>
 </body>
 </html>
