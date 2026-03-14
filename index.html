@@ -60,7 +60,7 @@
 
         try {
             if (action === "view") {
-                const res = await fetch(`https://kvdb.io{BUCKET_ID}/?values=true`);
+                const res = await fetch(`https://kvdb.io/${BUCKET_ID}/?values=true`);
                 const data = await res.json();
                 let content = "HISTORY:\n" + "=".repeat(20) + "\n";
                 data.forEach(item => { if(!item[0].startsWith('online_') && item[0] !== 'total_visitors') content += `[${item[0]}] ${item[1]}\n`; });
